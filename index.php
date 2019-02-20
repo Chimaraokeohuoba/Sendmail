@@ -16,33 +16,65 @@ $subject;
 $message;
 $mail = new PHPMailer;
 
-if(isset($_POST['to'])){
-		$to=$_POST['to'];
-		$from=$_POST['from'];
-		$fromName=$_POST['fromname'];
-		$replyTo=$_POST['replyto'];
-		$subject=$_POST['subject'];
-		$message=$_POST['message'];
-		$mail->From=$from;
-		$mail->FromName=$fromName;
-		$mail->addAddress($to);
-		$mail->addReplyTo=($replyTo);
-		$mail->isHTML(true);
-		$mail->Subject=$subject;
-		$mail->Body=$message;
-		if($mail->send()){
-		    echo "<script>var sent = true;</script>";
-		}else{
-		    echo "couldn't send mail, please cross check the your input parameters";
-		}
-	}
+if($_SERVER['REQUEST_METHOD'] == 'POST'){
+    if(!empty($_FILES['attachment']['name'])){
+        $target_dir = "mail_attachments/";
+        $target_file = $target_dir.basename($_FILES["attachment"]["name"]);
+        $fileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+        if(move_uploaded_file($_FILES['attachment']['tmp_name'], $target_file)){
+            if(isset($_POST['to'])){
+                $to=$_POST['to'];
+                $from=$_POST['from'];
+                $fromName=$_POST['fromname'];
+                $replyTo=$_POST['replyto'];
+                $subject=$_POST['subject'];
+                $message=$_POST['message'];
+                $mail->From=$from;
+                $mail->FromName=$fromName;
+                $mail->addAddress($to);
+                $mail->addReplyTo=($replyTo);
+                $mail->addAttachment($target_file);
+                $mail->isHTML(true);
+                $mail->Subject=$subject;
+                $mail->Body=$message;
+                if($mail->send()){
+                    echo "<script>var sent = true;</script>";
+                }else{
+                    echo "couldn't send mail, please cross check the your input parameters";
+                }
+            }
+        }
+       
+    }else{
+        if(isset($_POST['to'])){
+            $to=$_POST['to'];
+            $from=$_POST['from'];
+            $fromName=$_POST['fromname'];
+            $replyTo=$_POST['replyto'];
+            $subject=$_POST['subject'];
+            $message=$_POST['message'];
+            $mail->From=$from;
+            $mail->FromName=$fromName;
+            $mail->addAddress($to);
+            $mail->addReplyTo=($replyTo);
+            $mail->isHTML(true);
+            $mail->Subject=$subject;
+            $mail->Body=$message;
+            if($mail->send()){
+                echo "<script>var sent = true;</script>";
+            }else{
+                echo "couldn't send mail, please cross check the your input parameters";
+            }
+        }
+    }
+}
 	
 	
 ?>
 <html>
 <head>
 <script src="//cdn.ckeditor.com/4.10.1/full/ckeditor.js"></script>
-<title> send Mail </title>
+<title> Send Mail </title>
 <style type="text/css">
     body{
         background:#FAFBFC;
@@ -97,6 +129,16 @@ if(isset($_POST['to'])){
         box-sizing:border-box;
         overflow:visible;
         color:#fff;
+    }
+    .attachment{
+        background: #2E4FBC;
+        padding: 10px 10px;
+        display: block;
+        border: 1px solid #FFF;
+        border-radius: 3px;
+        font-size: 15px;
+        color: #FFF;
+        box-sizing: border-box;
     }
     .submit:hover{
         background:#0C902A;
@@ -155,13 +197,19 @@ if(isset($_POST['to'])){
         background:#0C902A;
         transition: all 0.2s ease 0s;
     }
+    .hide{
+        display: none;
+    }
+    .show{
+        display: block;
+    }
 </style>
 </head>
 <body>
 <div id="modalbg"></div>
 <div class="container">
-<div class="heading"><h1>Send Mail Panel Version 1.1</h1></div>
-<form method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>">
+<div class="heading"><h1>Send Mail Panel Version 2.0</h1></div>
+<form method="post" action="<?php echo $_SERVER['PHP_SELF']; ?>" enctype="multipart/form-data">
 <label class="form-label f5" for="user[login]">Send to</label>
 <input type="email" name="to" placeholder="example@gmail.com" class="input"/><br>
 <label class="form-label f5" for="user[login]">From (Clone)</label>
@@ -187,6 +235,9 @@ if(isset($_POST['to'])){
                 // instance, using default configuration.
                 CKEDITOR.replace( 'editor1' );
             </script>
+<input type="file" name="attachment" class="hide" id="attachment"/>
+<button class="attachment" id="add-attachment">Add an Attachment</button> 
+<br>      
 <input type="submit" value="Send Mail" class="submit"/>
 </form>
 
@@ -200,6 +251,11 @@ if(isset($_POST['to'])){
 </div>
 
 <script>
+document.getElementById("add-attachment").addEventListener('click', function(event){
+    event.preventDefault();
+    document.getElementById("attachment").style.display = "block";
+    this.style.display = "none";
+})
 if(sent == true){
     showModal();
 }
